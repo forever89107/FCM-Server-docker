@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  #DataBasse MariaDB
+  app-db:
+    container_name: app-db
+    image: mariadb:10.7.1
+    # platform: linux/x86_64 #垃圾Ｍ1
+    restart: always
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./sqls:/docker-entrypoint-initdb.d
+    environment: 
+      MARIADB_ROOT_PASSWORD : "123456"
+      MYSQL_DATABASE: demo
+      MYSQL_USER: jason
+      MYSQL_PASSWORD: "123456"
+    # 映射到外埠  
+    ports:
+      - "3306:3306"
+    networks:
+      - app-server-network
+
+  # SpringBoot Server
+  app-server:
+    depends_on:
+      - app-db
+    image: demo-0.0.1-snapshot.jar
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "8890:8890"
+    # environment: # Pass environment variables to the service
+    #   DATASOURCE_HOST: app-db
+    #   DATASOURCE_POST: 3306
+    #   DATASOURCE_NAME: demo
+    #   DATASOURCE_USERNAME: jason
+    #   DATASOURCE_PASSWORD: 123456
+    networks:
+      - app-server-network
+    command: ["./wait-for-it.sh", "app-db:3306", "--", "java", "-jar", "demo-0.0.1-snapshot.jar"]
+
+# Volume
+volumes:
+  mariadb-data:
+
+# Network
+networks:
+  app-server-network:
